@@ -1,0 +1,45 @@
+query MembersView(
+  $organization: String!,
+  $members_cursor: String,
+  $saml_id_provider_cursor: String,
+) {
+  organization(login: $organization) {
+    # `first` or `last` value must be provided and they have a limit of 100 records
+    membersWithRole(after: $members_cursor, first: 100) {
+      edges {
+	hasTwoFactorEnabled
+        node {
+          databaseId
+          id
+          login
+          name
+        }
+        role
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+    samlIdentityProvider {
+      # `first` or `last` value must be provided and they have a limit of 100 records
+      externalIdentities(after: $saml_id_provider_cursor, first: 100) {
+        edges {
+          node {
+            user {
+	      id
+            }
+            guid
+            samlIdentity {
+              nameId
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
