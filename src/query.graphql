@@ -1,7 +1,7 @@
 query MembersView(
   $organization: String!,
   $members_cursor: String,
-  $saml_id_provider_cursor: String,
+  $ext_ids_cursor: String,
 ) {
   organization(login: $organization) {
     # `first` or `last` value must be provided and they have a limit of 100 records
@@ -23,7 +23,7 @@ query MembersView(
     }
     samlIdentityProvider {
       # `first` or `last` value must be provided and they have a limit of 100 records
-      externalIdentities(after: $saml_id_provider_cursor, first: 100) {
+      externalIdentities(after: $ext_ids_cursor, first: 100) {
         edges {
           node {
             user {

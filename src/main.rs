@@ -17,7 +17,7 @@ struct MembersView;
 #[clap()]
 struct Opts {
     #[clap(short, long, default_value = "")]
-    cache_file: String,
+    cache_file_prefix: String,
     #[clap(name = "ORGANIZATION")]
     org: String,
     #[clap(name = "OUT_FILE")]
@@ -29,20 +29,23 @@ struct Env {
     github_access_token: String,
 }
 
-fn main() -> std::result::Result<(), anyhow::Error> {
-    let config: Env = envy::from_env().context("Failed to read necessary environment values")?;
-
-    let opts = Opts::parse();
+fn query(
+    config: &Env,
+    opts: &Opts,
+    members_cursor: Option<String>,
+    ext_ids_cursor: Option<String>,
+    iter_num: u8,
+) -> std::result::Result<Response<members_view::ResponseData>, anyhow::Error> {
     let q = MembersView::build_query(members_view::Variables {
-        organization: opts.org,
-        members_cursor: None,
-        saml_id_provider_cursor: None,
+        organization: opts.org.clone(),
+        members_cursor,
+        ext_ids_cursor,
     });
 
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
-        .bearer_auth(config.github_access_token)
+        .bearer_auth(&config.github_access_token)
         .json(&q)
         .send()?;
 
@@ -56,12 +59,32 @@ fn main() -> std::result::Result<(), anyhow::Error> {
         );
     }
 
-    if opts.cache_file.len() > 0 {
-        let mut cache_file = std::fs::File::create(opts.cache_file)?;
+    if opts.cache_file_prefix.len() > 0 {
+        let cache_file_path = format!("{}.{:02}", opts.cache_file_prefix, iter_num);
+        let mut cache_file = std::fs::File::create(cache_file_path)?;
         cache_file.write_all(resp_text.as_ref())?;
     }
 
     let json_root: Response<members_view::ResponseData> = serde_json::from_str(&resp_text)?;
+
+    Ok(json_root)
+}
+
+fn extract(
+    json_root: Response<members_view::ResponseData>,
+) -> std::result::Result<
+    (
+        Vec<Option<members_view::MembersViewOrganizationMembersWithRoleEdges>>,
+        members_view::MembersViewOrganizationMembersWithRolePageInfo,
+        Vec<
+            Option<
+                members_view::MembersViewOrganizationSamlIdentityProviderExternalIdentitiesEdges,
+            >,
+        >,
+        members_view::MembersViewOrganizationSamlIdentityProviderExternalIdentitiesPageInfo,
+    ),
+    anyhow::Error,
+> {
     if let Some(errors) = json_root.errors {
         let messages = errors
             .iter()
@@ -75,31 +98,69 @@ fn main() -> std::result::Result<(), anyhow::Error> {
     let organization = json_root
         .data
         .and_then(|d| d.organization)
-        .expect("organization info not found in response");
-
-    let saml_identities = organization
-        .saml_identity_provider
-        .and_then(|p| p.external_identities.edges)
-        .expect("SAML identity list not found in response");
-
-    let mut map = BTreeMap::new();
-
-    for identity in saml_identities {
-        if let Some(node) = identity.and_then(|i| i.node) {
-            if node.user.is_none() {
-                continue;
-            }
-            let user = node.user.unwrap();
-
-            let saml_name_id = node.saml_identity.and_then(|i| i.name_id);
-            map.insert(user.id, saml_name_id);
-        }
-    }
+        .ok_or(anyhow!("organization info not found"))?;
 
     let members = organization
         .members_with_role
         .edges
-        .expect("members list not fouond in response");
+        .ok_or(anyhow!("members list not fouond"))?;
+
+    let members_page_info = organization.members_with_role.page_info;
+
+    let ext_ids_root = organization
+        .saml_identity_provider
+        .and_then(|p| Some(p.external_identities))
+        .ok_or(anyhow!("external identity info not found"))?;
+
+    let ext_ids = ext_ids_root
+        .edges
+        .ok_or(anyhow!("SAML identity list not found"))?;
+
+    let ext_ids_page_info = ext_ids_root.page_info;
+
+    Ok((members, members_page_info, ext_ids, ext_ids_page_info))
+}
+
+fn main() -> std::result::Result<(), anyhow::Error> {
+    let config: Env = envy::from_env().context("Failed to read necessary environment values")?;
+    let opts = Opts::parse();
+
+    let mut members_list = Vec::new();
+    let mut ext_ids_list = Vec::new();
+    let mut members_cursor = None;
+    let mut ext_ids_cursor = None;
+    let mut num = 0;
+
+    loop {
+        let json_root = query(&config, &opts, members_cursor, ext_ids_cursor, num)?;
+        let (members, members_page_info, ext_ids, ext_ids_page_info) = extract(json_root)?;
+        members_list.push(members);
+        ext_ids_list.push(ext_ids);
+
+        if !members_page_info.has_next_page && !ext_ids_page_info.has_next_page {
+            break;
+        }
+
+        members_cursor = members_page_info.end_cursor;
+        ext_ids_cursor = ext_ids_page_info.end_cursor;
+        num += 1;
+    }
+
+    let mut map = BTreeMap::new();
+
+    for ext_ids in ext_ids_list {
+        for identity in ext_ids {
+            if let Some(node) = identity.and_then(|i| i.node) {
+                if node.user.is_none() {
+                    continue;
+                }
+                let user = node.user.unwrap();
+
+                let saml_name_id = node.saml_identity.and_then(|i| i.name_id);
+                map.insert(user.id, saml_name_id);
+            }
+        }
+    }
 
     let mut writer = csv::Writer::from_path(opts.out_csv_file)?;
     writer.write_record(&[
@@ -112,26 +173,29 @@ fn main() -> std::result::Result<(), anyhow::Error> {
         "saml_name_id",
     ])?;
 
-    for member in members {
-        if let Some(member) = member {
-            if member.node.is_none() {
-                continue;
+    for members in members_list {
+        for member in members {
+            if let Some(member) = member {
+                if member.node.is_none() {
+                    continue;
+                }
+                let node = member.node.unwrap();
+
+                let saml_name_id = map.get(&node.id);
+
+                writer.serialize((
+                    node.id,
+                    node.database_id,
+                    node.login,
+                    node.name,
+                    member.role,
+                    member.has_two_factor_enabled,
+                    saml_name_id,
+                ))?;
             }
-            let node = member.node.unwrap();
-
-            let saml_name_id = map.get(&node.id);
-
-            writer.serialize((
-                node.id,
-                node.database_id,
-                node.login,
-                node.name,
-                member.role,
-                member.has_two_factor_enabled,
-                saml_name_id,
-            ))?;
         }
     }
+
     writer.flush()?;
 
     Ok(())
