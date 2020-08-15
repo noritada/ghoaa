@@ -122,8 +122,8 @@ fn extract(
 }
 
 fn main() -> std::result::Result<(), anyhow::Error> {
-    let config: Env = envy::from_env().context("Failed to read necessary environment values")?;
     let opts = Opts::parse();
+    let config: Env = envy::from_env().context("Failed to read necessary environment values")?;
 
     let mut members_list = Vec::new();
     let mut ext_ids_list = Vec::new();
