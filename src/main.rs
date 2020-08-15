@@ -16,8 +16,8 @@ struct MembersView;
 #[derive(Clap)]
 #[clap()]
 struct Opts {
-    #[clap(short, long, default_value = "")]
-    cache_file_prefix: String,
+    #[clap(short, long)]
+    cache_file_prefix: Option<String>,
     #[clap(name = "ORGANIZATION")]
     org: String,
     #[clap(name = "OUT_FILE")]
@@ -59,8 +59,8 @@ fn query(
         );
     }
 
-    if opts.cache_file_prefix.len() > 0 {
-        let cache_file_path = format!("{}.{:02}", opts.cache_file_prefix, iter_num);
+    if let Some(cache_file_prefix) = &opts.cache_file_prefix {
+        let cache_file_path = format!("{}.{:02}", cache_file_prefix, iter_num);
         let mut cache_file = std::fs::File::create(cache_file_path)?;
         cache_file.write_all(resp_text.as_ref())?;
     }
