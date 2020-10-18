@@ -1,5 +1,6 @@
 use anyhow::*;
 use clap::Clap;
+use console::{Style, Term};
 use graphql_client::{GraphQLQuery, Response};
 use serde::*;
 use std::collections::BTreeMap;
@@ -29,6 +30,30 @@ struct Env {
     github_access_token: String,
 }
 
+enum Progress {
+    Downloading,
+    Downloaded,
+}
+
+fn print_progress(status: Progress) -> std::io::Result<()> {
+    let stderr = Term::stderr();
+    match status {
+        Progress::Downloading => {
+            let style = Style::new().yellow().bold();
+            let s = style.apply_to("Downloading").to_string();
+            stderr.write_line(&s)?;
+        }
+        Progress::Downloaded => {
+            let style = Style::new().green().bold();
+            let s = style.apply_to("Downloaded").to_string();
+            stderr.clear_last_lines(1)?;
+            stderr.write_line(&s)?;
+        }
+    };
+
+    Ok(())
+}
+
 fn query(
     config: &Env,
     opts: &Opts,
@@ -42,6 +67,7 @@ fn query(
         ext_ids_cursor,
     });
 
+    print_progress(Progress::Downloading)?;
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
@@ -58,6 +84,7 @@ fn query(
             resp_text
         );
     }
+    print_progress(Progress::Downloaded)?;
 
     if let Some(cache_file_prefix) = &opts.cache_file_prefix {
         let cache_file_path = format!("{}.{:02}", cache_file_prefix, iter_num);

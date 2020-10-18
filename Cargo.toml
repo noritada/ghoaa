@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 clap = "^3.0.0-beta.1"
+console = "0.12"
 csv = "1.1"
 envy = "^0.3"
 graphql_client = "0.9"
