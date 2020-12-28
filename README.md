@@ -1,4 +1,3 @@
-# github_org_member_saml_list
+# Ghoast: GitHub Organization Assistant Tool
 
-A sample code for getting members list with SAML identities of GitHub
-Organization members.
+Currently, this tool just provides a functionality to get a members list with SAML identities of GitHub Organization members.
