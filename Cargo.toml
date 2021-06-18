@@ -1,5 +1,5 @@
 [package]
-name = "github_org_member_saml_list"
+name = "ghoast"
 version = "0.1.0"
 authors = ["Noritada Kobayashi <noritada.kobayashi@wni.com>"]
 edition = "2018"
