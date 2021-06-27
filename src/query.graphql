@@ -7,7 +7,7 @@ query MembersView(
     # `first` or `last` value must be provided and they have a limit of 100 records
     membersWithRole(after: $members_cursor, first: 100) {
       edges {
-	hasTwoFactorEnabled
+        hasTwoFactorEnabled
         node {
           databaseId
           id
@@ -27,7 +27,7 @@ query MembersView(
         edges {
           node {
             user {
-	      id
+              id
             }
             guid
             samlIdentity {
