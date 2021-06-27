@@ -1,0 +1,29 @@
+query RepositoriesView(
+  $organization: String!,
+  $repositories_cursor: String,
+) {
+  organization(login: $organization) {
+    # `first` or `last` value must be provided and they have a limit of 100 records
+    repositories(after: $repositories_cursor, first: 100) {
+      edges {
+        node {
+          createdAt
+          databaseId
+          description
+          id
+          isFork
+          isPrivate
+          name
+          primaryLanguage {
+            name
+          }
+          updatedAt
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}
