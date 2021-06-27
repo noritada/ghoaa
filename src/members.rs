@@ -89,7 +89,7 @@ fn extract(
     let members = organization
         .members_with_role
         .edges
-        .ok_or(anyhow!("members list not fouond"))?;
+        .ok_or(anyhow!("members list not found"))?;
 
     let members_page_info = organization.members_with_role.page_info;
 
