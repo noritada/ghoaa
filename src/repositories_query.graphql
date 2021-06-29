@@ -13,6 +13,18 @@ query RepositoriesView(
           id
           isFork
           isPrivate
+          languages(first: 100) {
+            edges {
+              node {
+                name
+              }
+              size
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
           name
           primaryLanguage {
             name
