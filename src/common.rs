@@ -11,7 +11,22 @@ pub(crate) struct Opts {
     pub(crate) org: String,
     #[clap(name = "OUT_FILE")]
     pub(crate) out_csv_file: String,
+    #[clap(subcommand)]
+    pub(crate) subcmd: SubCommand,
 }
+
+#[derive(Clap)]
+pub(crate) enum SubCommand {
+    #[clap()]
+    Members(Members),
+    Repositories(Repositories),
+}
+
+#[derive(Clap)]
+pub(crate) struct Members {}
+
+#[derive(Clap)]
+pub(crate) struct Repositories {}
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Env {
