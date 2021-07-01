@@ -15,7 +15,7 @@ type DateTime = String;
 struct RepositoriesView;
 
 fn query(
-    config: &Env,
+    env: &Env,
     opts: &Opts,
     repositories_cursor: Option<String>,
     iter_num: u8,
@@ -29,7 +29,7 @@ fn query(
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
-        .bearer_auth(&config.github_access_token)
+        .bearer_auth(&env.github_access_token)
         .json(&q)
         .send()?;
 
@@ -89,13 +89,13 @@ fn extract(
     Ok((repositories, repositories_page_info))
 }
 
-pub(crate) fn process(config: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
+pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
     let mut repositories_list = Vec::new();
     let mut repositories_cursor = None;
     let mut num = 0;
 
     loop {
-        let json_root = query(&config, &opts, repositories_cursor, num)?;
+        let json_root = query(&env, &opts, repositories_cursor, num)?;
         let (repositories, repositories_page_info) = extract(json_root)?;
         repositories_list.push(repositories);
 

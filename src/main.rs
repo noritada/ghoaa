@@ -8,10 +8,10 @@ mod repositories;
 
 fn main() -> std::result::Result<(), anyhow::Error> {
     let opts = Opts::parse();
-    let config: Env = envy::from_env().context("Failed to read necessary environment values")?;
+    let env: Env = envy::from_env().context("Failed to read necessary environment values")?;
 
     match opts.subcmd {
-        SubCommand::Members(_) => members::process(&config, &opts),
-        SubCommand::Repositories(_) => repositories::process(&config, &opts),
+        SubCommand::Members(_) => members::process(&env, &opts),
+        SubCommand::Repositories(_) => repositories::process(&env, &opts),
     }
 }

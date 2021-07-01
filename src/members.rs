@@ -14,7 +14,7 @@ use crate::common::*;
 struct MembersView;
 
 fn query(
-    config: &Env,
+    env: &Env,
     opts: &Opts,
     members_cursor: Option<String>,
     ext_ids_cursor: Option<String>,
@@ -30,7 +30,7 @@ fn query(
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
-        .bearer_auth(&config.github_access_token)
+        .bearer_auth(&env.github_access_token)
         .json(&q)
         .send()?;
 
@@ -107,7 +107,7 @@ fn extract(
     Ok((members, members_page_info, ext_ids, ext_ids_page_info))
 }
 
-pub(crate) fn process(config: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
+pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
     let mut members_list = Vec::new();
     let mut ext_ids_list = Vec::new();
     let mut members_cursor = None;
@@ -115,7 +115,7 @@ pub(crate) fn process(config: &Env, opts: &Opts) -> std::result::Result<(), anyh
     let mut num = 0;
 
     loop {
-        let json_root = query(&config, &opts, members_cursor, ext_ids_cursor, num)?;
+        let json_root = query(&env, &opts, members_cursor, ext_ids_cursor, num)?;
         let (members, members_page_info, ext_ids, ext_ids_page_info) = extract(json_root)?;
         members_list.push(members);
         ext_ids_list.push(ext_ids);
