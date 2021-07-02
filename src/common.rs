@@ -20,6 +20,7 @@ pub(crate) enum SubCommand {
     #[clap()]
     Members(Members),
     Repositories(Repositories),
+    All(All),
 }
 
 #[derive(Clap)]
@@ -27,6 +28,9 @@ pub(crate) struct Members {}
 
 #[derive(Clap)]
 pub(crate) struct Repositories {}
+
+#[derive(Clap)]
+pub(crate) struct All {}
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Env {
