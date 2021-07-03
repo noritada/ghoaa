@@ -37,6 +37,51 @@ pub(crate) struct Env {
     pub(crate) github_access_token: String,
 }
 
+pub(crate) struct Config {
+    pub(crate) github_access_token: String,
+    pub(crate) cache_file_prefix: Option<String>,
+    pub(crate) org: String,
+    pub(crate) out_csv_file: String,
+    pub(crate) subcmd: SubCommand,
+}
+
+impl Config {
+    pub(crate) fn new() -> Self {
+        Self {
+            github_access_token: "".to_owned(),
+            cache_file_prefix: None,
+            org: "".to_owned(),
+            out_csv_file: "out.csv".to_owned(),
+            subcmd: SubCommand::All(All {}),
+        }
+    }
+
+    pub(crate) fn update_with_env(self, env: Env) -> Self {
+        Self {
+            github_access_token: env.github_access_token,
+            ..self
+        }
+    }
+
+    pub(crate) fn update_with_opts(self, opts: Opts) -> Self {
+        let config = if let Some(cache_file_prefix) = opts.cache_file_prefix {
+            Self {
+                cache_file_prefix: Some(cache_file_prefix),
+                ..self
+            }
+        } else {
+            self
+        };
+
+        Self {
+            org: opts.org,
+            out_csv_file: opts.out_csv_file,
+            subcmd: opts.subcmd,
+            ..config
+        }
+    }
+}
+
 pub(crate) enum Progress {
     Downloading,
     Downloaded,

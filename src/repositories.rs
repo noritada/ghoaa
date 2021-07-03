@@ -15,13 +15,12 @@ type DateTime = String;
 struct RepositoriesView;
 
 fn query(
-    env: &Env,
-    opts: &Opts,
+    config: &Config,
     repositories_cursor: Option<String>,
     iter_num: u8,
 ) -> std::result::Result<Response<repositories_view::ResponseData>, anyhow::Error> {
     let q = RepositoriesView::build_query(repositories_view::Variables {
-        organization: opts.org.clone(),
+        organization: config.org.clone(),
         repositories_cursor,
     });
 
@@ -29,7 +28,7 @@ fn query(
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
-        .bearer_auth(&env.github_access_token)
+        .bearer_auth(&config.github_access_token)
         .json(&q)
         .send()?;
 
@@ -44,7 +43,7 @@ fn query(
     }
     print_progress(Progress::Downloaded)?;
 
-    if let Some(cache_file_prefix) = &opts.cache_file_prefix {
+    if let Some(cache_file_prefix) = &config.cache_file_prefix {
         let cache_file_path = format!("{}.{:02}", cache_file_prefix, iter_num);
         let mut cache_file = std::fs::File::create(cache_file_path)?;
         cache_file.write_all(resp_text.as_ref())?;
@@ -89,13 +88,13 @@ fn extract(
     Ok((repositories, repositories_page_info))
 }
 
-pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
+pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error> {
     let mut repositories_list = Vec::new();
     let mut repositories_cursor = None;
     let mut num = 0;
 
     loop {
-        let json_root = query(&env, &opts, repositories_cursor, num)?;
+        let json_root = query(&config, repositories_cursor, num)?;
         let (repositories, repositories_page_info) = extract(json_root)?;
         repositories_list.push(repositories);
 
@@ -132,7 +131,7 @@ pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow:
         }
     }
 
-    let mut writer = csv::Writer::from_path(&opts.out_csv_file)?;
+    let mut writer = csv::Writer::from_path(&config.out_csv_file)?;
     writer.write_record(&[
         "id",
         "database_id",

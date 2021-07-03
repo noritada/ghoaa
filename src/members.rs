@@ -14,14 +14,13 @@ use crate::common::*;
 struct MembersView;
 
 fn query(
-    env: &Env,
-    opts: &Opts,
+    config: &Config,
     members_cursor: Option<String>,
     ext_ids_cursor: Option<String>,
     iter_num: u8,
 ) -> std::result::Result<Response<members_view::ResponseData>, anyhow::Error> {
     let q = MembersView::build_query(members_view::Variables {
-        organization: opts.org.clone(),
+        organization: config.org.clone(),
         members_cursor,
         ext_ids_cursor,
     });
@@ -30,7 +29,7 @@ fn query(
     let client = reqwest::Client::new();
     let mut resp = client
         .post("https://api.github.com/graphql")
-        .bearer_auth(&env.github_access_token)
+        .bearer_auth(&config.github_access_token)
         .json(&q)
         .send()?;
 
@@ -45,7 +44,7 @@ fn query(
     }
     print_progress(Progress::Downloaded)?;
 
-    if let Some(cache_file_prefix) = &opts.cache_file_prefix {
+    if let Some(cache_file_prefix) = &config.cache_file_prefix {
         let cache_file_path = format!("{}.{:02}", cache_file_prefix, iter_num);
         let mut cache_file = std::fs::File::create(cache_file_path)?;
         cache_file.write_all(resp_text.as_ref())?;
@@ -107,7 +106,7 @@ fn extract(
     Ok((members, members_page_info, ext_ids, ext_ids_page_info))
 }
 
-pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow::Error> {
+pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error> {
     let mut members_list = Vec::new();
     let mut ext_ids_list = Vec::new();
     let mut members_cursor = None;
@@ -115,7 +114,7 @@ pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow:
     let mut num = 0;
 
     loop {
-        let json_root = query(&env, &opts, members_cursor, ext_ids_cursor, num)?;
+        let json_root = query(&config, members_cursor, ext_ids_cursor, num)?;
         let (members, members_page_info, ext_ids, ext_ids_page_info) = extract(json_root)?;
         members_list.push(members);
         ext_ids_list.push(ext_ids);
@@ -145,7 +144,7 @@ pub(crate) fn process(env: &Env, opts: &Opts) -> std::result::Result<(), anyhow:
         }
     }
 
-    let mut writer = csv::Writer::from_path(&opts.out_csv_file)?;
+    let mut writer = csv::Writer::from_path(&config.out_csv_file)?;
     writer.write_record(&[
         "id",
         "database_id",
