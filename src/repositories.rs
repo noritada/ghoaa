@@ -93,6 +93,9 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     let mut repositories_cursor = None;
     let mut num = 0;
 
+    let local: chrono::prelude::DateTime<chrono::prelude::Local> = chrono::prelude::Local::now();
+    let out_fname = local.format(&config.out_csv_file).to_string();
+
     loop {
         let json_root = query(&config, repositories_cursor, num)?;
         let (repositories, repositories_page_info) = extract(json_root)?;
@@ -131,7 +134,7 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
         }
     }
 
-    let mut writer = csv::Writer::from_path(&config.out_csv_file)?;
+    let mut writer = csv::Writer::from_path(out_fname)?;
     writer.write_record(&[
         "id",
         "database_id",

@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+chrono = "0.4"
 clap = "^3.0.0-beta.1"
 console = "0.12"
 csv = "1.1"
