@@ -110,25 +110,23 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     }
 
     for repositories in &repositories_list {
-        for repository in repositories {
-            if let Some(repository) = repository {
-                if repository.node.is_none() {
-                    continue;
-                }
-                let node = repository.node.as_ref().unwrap();
+        for repository in repositories.into_iter().flatten() {
+            if repository.node.is_none() {
+                continue;
+            }
+            let node = repository.node.as_ref().unwrap();
 
-                if let Some(languages) = &node.languages {
-                    if languages.page_info.has_next_page {
-                        bail!(
-                            "'Languages' needs pagenation support!
+            if let Some(languages) = &node.languages {
+                if languages.page_info.has_next_page {
+                    bail!(
+                        "'Languages' needs pagenation support!
     Repository: {}
     Repository ID: {}
     Language's End Cursor: {}",
-                            node.name,
-                            node.id,
-                            languages.page_info.end_cursor.as_ref().unwrap()
-                        )
-                    }
+                        node.name,
+                        node.id,
+                        languages.page_info.end_cursor.as_ref().unwrap()
+                    )
                 }
             }
         }
@@ -149,40 +147,40 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     ])?;
 
     for repositories in repositories_list {
-        for repository in repositories {
-            if let Some(repository) = repository {
-                if repository.node.is_none() {
-                    continue;
-                }
-                let node = repository.node.unwrap();
+        for repository in repositories.into_iter().flatten() {
+            if repository.node.is_none() {
+                continue;
+            }
+            let node = repository.node.unwrap();
 
-                let primary_language = node.primary_language.map(|n| n.name);
+            let primary_language = node.primary_language.map(|n| n.name);
 
-                let languages = match node.languages {
-                    Some(repositories_view::RepositoriesViewOrganizationRepositoriesEdgesNodeLanguages {
+            let languages = match node.languages {
+                Some(
+                    repositories_view::RepositoriesViewOrganizationRepositoriesEdgesNodeLanguages {
                         edges: Some(languages),
                         ..
-                    }) => languages
-                        .into_iter()
-                        .filter_map(|o| o.map(|e| format!("{}:{}", e.node.name, e.size)))
-                        .collect::<Vec<_>>()
-                        .join(";"),
-                    _ => String::new(),
-                };
+                    },
+                ) => languages
+                    .into_iter()
+                    .filter_map(|o| o.map(|e| format!("{}:{}", e.node.name, e.size)))
+                    .collect::<Vec<_>>()
+                    .join(";"),
+                _ => String::new(),
+            };
 
-                writer.serialize((
-                    node.id,
-                    node.database_id,
-                    node.name,
-                    node.created_at,
-                    node.updated_at,
-                    node.is_fork,
-                    node.is_private,
-                    primary_language,
-                    languages,
-                    node.description,
-                ))?;
-            }
+            writer.serialize((
+                node.id,
+                node.database_id,
+                node.name,
+                node.created_at,
+                node.updated_at,
+                node.is_fork,
+                node.is_private,
+                primary_language,
+                languages,
+                node.description,
+            ))?;
         }
     }
 

@@ -159,25 +159,23 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     ])?;
 
     for members in members_list {
-        for member in members {
-            if let Some(member) = member {
-                if member.node.is_none() {
-                    continue;
-                }
-                let node = member.node.unwrap();
-
-                let saml_name_id = map.get(&node.id);
-
-                writer.serialize((
-                    node.id,
-                    node.database_id,
-                    node.login,
-                    node.name,
-                    member.role,
-                    member.has_two_factor_enabled,
-                    saml_name_id,
-                ))?;
+        for member in members.into_iter().flatten() {
+            if member.node.is_none() {
+                continue;
             }
+            let node = member.node.unwrap();
+
+            let saml_name_id = map.get(&node.id);
+
+            writer.serialize((
+                node.id,
+                node.database_id,
+                node.login,
+                node.name,
+                member.role,
+                member.has_two_factor_enabled,
+                saml_name_id,
+            ))?;
         }
     }
 
