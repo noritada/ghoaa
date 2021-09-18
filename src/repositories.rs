@@ -97,7 +97,7 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     let out_fname = local.format(&config.out_csv_file).to_string();
 
     loop {
-        let json_root = query(&config, repositories_cursor, num)?;
+        let json_root = query(config, repositories_cursor, num)?;
         let (repositories, repositories_page_info) = extract(json_root)?;
         repositories_list.push(repositories);
 

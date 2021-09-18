@@ -94,7 +94,7 @@ fn extract(
 
     let ext_ids_root = organization
         .saml_identity_provider
-        .and_then(|p| Some(p.external_identities))
+        .map(|p| p.external_identities)
         .ok_or(anyhow!("external identity info not found"))?;
 
     let ext_ids = ext_ids_root
@@ -117,7 +117,7 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     let out_fname = local.format(&config.out_csv_file).to_string();
 
     loop {
-        let json_root = query(&config, members_cursor, ext_ids_cursor, num)?;
+        let json_root = query(config, members_cursor, ext_ids_cursor, num)?;
         let (members, members_page_info, ext_ids, ext_ids_page_info) = extract(json_root)?;
         members_list.push(members);
         ext_ids_list.push(ext_ids);
