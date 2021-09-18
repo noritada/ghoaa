@@ -76,12 +76,12 @@ fn extract(
     let organization = json_root
         .data
         .and_then(|d| d.organization)
-        .ok_or(anyhow!("organization info not found"))?;
+        .ok_or_else(|| anyhow!("organization info not found"))?;
 
     let repositories = organization
         .repositories
         .edges
-        .ok_or(anyhow!("repositories list not found"))?;
+        .ok_or_else(|| anyhow!("repositories list not found"))?;
 
     let repositories_page_info = organization.repositories.page_info;
 

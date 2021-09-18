@@ -83,23 +83,23 @@ fn extract(
     let organization = json_root
         .data
         .and_then(|d| d.organization)
-        .ok_or(anyhow!("organization info not found"))?;
+        .ok_or_else(|| anyhow!("organization info not found"))?;
 
     let members = organization
         .members_with_role
         .edges
-        .ok_or(anyhow!("members list not found"))?;
+        .ok_or_else(|| anyhow!("members list not found"))?;
 
     let members_page_info = organization.members_with_role.page_info;
 
     let ext_ids_root = organization
         .saml_identity_provider
         .map(|p| p.external_identities)
-        .ok_or(anyhow!("external identity info not found"))?;
+        .ok_or_else(|| anyhow!("external identity info not found"))?;
 
     let ext_ids = ext_ids_root
         .edges
-        .ok_or(anyhow!("SAML identity list not found"))?;
+        .ok_or_else(|| anyhow!("SAML identity list not found"))?;
 
     let ext_ids_page_info = ext_ids_root.page_info;
 
