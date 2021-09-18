@@ -83,23 +83,23 @@ fn extract(
     let organization = json_root
         .data
         .and_then(|d| d.organization)
-        .ok_or(anyhow!("organization info not found"))?;
+        .ok_or_else(|| anyhow!("organization info not found"))?;
 
     let members = organization
         .members_with_role
         .edges
-        .ok_or(anyhow!("members list not found"))?;
+        .ok_or_else(|| anyhow!("members list not found"))?;
 
     let members_page_info = organization.members_with_role.page_info;
 
     let ext_ids_root = organization
         .saml_identity_provider
-        .and_then(|p| Some(p.external_identities))
-        .ok_or(anyhow!("external identity info not found"))?;
+        .map(|p| p.external_identities)
+        .ok_or_else(|| anyhow!("external identity info not found"))?;
 
     let ext_ids = ext_ids_root
         .edges
-        .ok_or(anyhow!("SAML identity list not found"))?;
+        .ok_or_else(|| anyhow!("SAML identity list not found"))?;
 
     let ext_ids_page_info = ext_ids_root.page_info;
 
@@ -117,7 +117,7 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     let out_fname = local.format(&config.out_csv_file).to_string();
 
     loop {
-        let json_root = query(&config, members_cursor, ext_ids_cursor, num)?;
+        let json_root = query(config, members_cursor, ext_ids_cursor, num)?;
         let (members, members_page_info, ext_ids, ext_ids_page_info) = extract(json_root)?;
         members_list.push(members);
         ext_ids_list.push(ext_ids);
@@ -159,25 +159,23 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     ])?;
 
     for members in members_list {
-        for member in members {
-            if let Some(member) = member {
-                if member.node.is_none() {
-                    continue;
-                }
-                let node = member.node.unwrap();
-
-                let saml_name_id = map.get(&node.id);
-
-                writer.serialize((
-                    node.id,
-                    node.database_id,
-                    node.login,
-                    node.name,
-                    member.role,
-                    member.has_two_factor_enabled,
-                    saml_name_id,
-                ))?;
+        for member in members.into_iter().flatten() {
+            if member.node.is_none() {
+                continue;
             }
+            let node = member.node.unwrap();
+
+            let saml_name_id = map.get(&node.id);
+
+            writer.serialize((
+                node.id,
+                node.database_id,
+                node.login,
+                node.name,
+                member.role,
+                member.has_two_factor_enabled,
+                saml_name_id,
+            ))?;
         }
     }
 
