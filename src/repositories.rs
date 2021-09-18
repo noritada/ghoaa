@@ -110,7 +110,7 @@ pub(crate) fn process(config: &Config) -> std::result::Result<(), anyhow::Error>
     }
 
     for repositories in &repositories_list {
-        for repository in repositories.into_iter().flatten() {
+        for repository in repositories.iter().flatten() {
             if repository.node.is_none() {
                 continue;
             }
