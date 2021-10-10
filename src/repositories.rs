@@ -25,24 +25,17 @@ fn query(
     };
 
     print_progress(Progress::Downloading)?;
-    let client = reqwest::Client::new();
-    let mut resp = client
+    let client = reqwest::blocking::Client::new();
+    let resp = client
         .post("https://api.github.com/graphql")
         .bearer_auth(&config.github_access_token)
         .json(&q)
         .send()?;
 
-    let resp_text = resp.text()?;
-    let status_code = resp.status();
-    if status_code.is_client_error() || status_code.is_server_error() {
-        bail!(
-            "Failed to get a successful data:\n    status code: {}\n    body: {}",
-            status_code,
-            resp_text
-        );
-    }
+    resp.error_for_status_ref()?;
     print_progress(Progress::Downloaded)?;
 
+    let resp_text = resp.text()?;
     if let Some(cache_file_prefix) = &config.cache_file_prefix {
         let cache_file_path = format!("{}.{:02}", cache_file_prefix, iter_num);
         let mut cache_file = std::fs::File::create(cache_file_path)?;
