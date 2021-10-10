@@ -19,11 +19,11 @@ fn query(
     ext_ids_cursor: Option<String>,
     iter_num: u8,
 ) -> std::result::Result<Response<members_view::ResponseData>, anyhow::Error> {
-    let q = MembersView::build_query(members_view::Variables {
+    let q = members_view::Variables {
         organization: config.org.clone(),
         members_cursor,
         ext_ids_cursor,
-    });
+    };
 
     print_progress(Progress::Downloading)?;
     let client = reqwest::Client::new();

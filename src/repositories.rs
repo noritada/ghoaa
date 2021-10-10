@@ -19,10 +19,10 @@ fn query(
     repositories_cursor: Option<String>,
     iter_num: u8,
 ) -> std::result::Result<Response<repositories_view::ResponseData>, anyhow::Error> {
-    let q = RepositoriesView::build_query(repositories_view::Variables {
+    let q = repositories_view::Variables {
         organization: config.org.clone(),
         repositories_cursor,
-    });
+    };
 
     print_progress(Progress::Downloading)?;
     let client = reqwest::Client::new();
