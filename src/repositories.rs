@@ -30,6 +30,7 @@ fn query(
     let resp = client
         .post("https://api.github.com/graphql")
         .bearer_auth(&config.github_access_token)
+        .header(reqwest::header::USER_AGENT, "ghoast/0.1.0")
         .json(&q)
         .send()?;
 
