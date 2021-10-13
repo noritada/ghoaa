@@ -87,17 +87,17 @@ pub(crate) enum Progress {
     Downloaded,
 }
 
-pub(crate) fn print_progress(status: Progress) -> std::io::Result<()> {
+pub(crate) fn print_progress(status: Progress, extra_info: &str) -> std::io::Result<()> {
     let stderr = Term::stderr();
     match status {
         Progress::Downloading => {
             let style = Style::new().yellow().bold();
-            let s = style.apply_to("Downloading").to_string();
+            let s = format!("{} {}", style.apply_to("Downloading"), extra_info);
             stderr.write_line(&s)?;
         }
         Progress::Downloaded => {
             let style = Style::new().green().bold();
-            let s = style.apply_to("Downloaded").to_string();
+            let s = format!("{} {}", style.apply_to("Downloaded"), extra_info);
             stderr.clear_last_lines(1)?;
             stderr.write_line(&s)?;
         }

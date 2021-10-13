@@ -25,7 +25,11 @@ fn query(
         ext_ids_cursor,
     };
 
-    print_progress(Progress::Downloading)?;
+    let extra_info = format!(
+        "with members_cursor={:?} and ext_ids_cursor={:?}",
+        &q.members_cursor, &q.ext_ids_cursor
+    );
+    print_progress(Progress::Downloading, &extra_info)?;
     let client = reqwest::blocking::Client::new();
     let resp = client
         .post("https://api.github.com/graphql")
@@ -34,7 +38,7 @@ fn query(
         .send()?;
 
     resp.error_for_status_ref()?;
-    print_progress(Progress::Downloaded)?;
+    print_progress(Progress::Downloaded, &extra_info)?;
 
     let resp_text = resp.text()?;
     if let Some(cache_file_prefix) = &config.cache_file_prefix {
